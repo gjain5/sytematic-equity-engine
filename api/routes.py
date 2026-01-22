@@ -117,3 +117,32 @@ async def get_metrics() -> Dict[str, Any]:
             status_code=500,
             detail=f"Error reading metrics: {str(e)}"
         )
+
+
+@router.get("/contributions")
+async def get_contributions() -> Dict[str, Any]:
+    """
+    Get return contribution analysis by position.
+    
+    Reads from artifacts/contributions.csv and returns as JSON.
+    """
+    contrib_path = ARTIFACTS_DIR / "contributions.csv"
+    
+    if not contrib_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Contributions file not found. Run the strategy first."
+        )
+    
+    try:
+        df = pd.read_csv(contrib_path)
+        return {
+            "contributions": df.to_dict(orient="records"),
+            "count": len(df),
+            "source": "artifacts/contributions.csv"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error reading contributions: {str(e)}"
+        )

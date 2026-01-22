@@ -71,6 +71,18 @@ def load_metrics() -> dict:
         return {}
 
 
+def load_contributions() -> pd.DataFrame:
+    """Load contribution analysis from API."""
+    try:
+        response = requests.get(f"{API_BASE}/contributions", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            return pd.DataFrame(data.get("contributions", []))
+        return pd.DataFrame()
+    except requests.exceptions.RequestException:
+        return pd.DataFrame()
+
+
 # Load all data
 portfolio_df = load_portfolio()
 performance_df = load_performance()
@@ -174,6 +186,78 @@ if not performance_df.empty and "portfolio_return_6m" in performance_df.columns:
         st.line_chart(roll_data, use_container_width=True)
     
     st.markdown("---")
+
+# Risk & Robustness Section
+st.header("Risk & Robustness Analysis")
+
+contributions_df = load_contributions()
+
+if metrics:
+    # Robustness metrics row
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        turnover = metrics.get('turnover', 0)
+        st.metric("Turnover", f"{turnover*100:.1f}%")
+    with col2:
+        st.metric("Positions Added", metrics.get('positions_added', 0))
+    with col3:
+        st.metric("Positions Removed", metrics.get('positions_removed', 0))
+    with col4:
+        cost_drag = metrics.get('cost_drag_pct', 0)
+        st.metric("Cost Drag", f"{cost_drag:.1f}%")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        top5_pct = metrics.get('top5_contribution_pct', 0)
+        st.metric("Top 5 Contribution", f"{top5_pct*100:.1f}%")
+    with col2:
+        st.metric("Top Contributor", metrics.get('top_contributor', 'N/A'))
+    with col3:
+        return_after = metrics.get('return_after_costs', 0)
+        st.metric("Return After Costs", f"{return_after*100:.1f}%")
+    with col4:
+        is_robust = metrics.get('is_robust', False)
+        st.metric("Robust?", "✓ Yes" if is_robust else "⚠️ No")
+    
+    # Robustness flags
+    flags = metrics.get('robustness_flags', '')
+    if flags:
+        st.warning(f"**Robustness Concerns:** {flags.replace('|', ', ')}")
+    else:
+        st.success("No robustness concerns detected.")
+
+# NAV with costs comparison
+if not performance_df.empty and "portfolio_nav_after_costs" in performance_df.columns:
+    st.subheader("Impact of Transaction Costs")
+    cost_data = performance_df[["portfolio_nav", "portfolio_nav_after_costs"]].copy()
+    cost_data.columns = ["Portfolio (Gross)", "Portfolio (Net of Costs)"]
+    st.line_chart(cost_data, use_container_width=True)
+
+# Contribution analysis
+if not contributions_df.empty:
+    st.subheader("Return Contribution by Position")
+    
+    # Top and bottom contributors
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("**Top 5 Contributors**")
+        top5 = contributions_df.head(5)[["symbol", "contribution"]].copy()
+        top5["contribution"] = (top5["contribution"] * 100).round(2).astype(str) + "%"
+        st.dataframe(top5, use_container_width=True, hide_index=True)
+    
+    with col2:
+        st.write("**Bottom 5 Contributors**")
+        bottom5 = contributions_df.tail(5)[["symbol", "contribution"]].copy()
+        bottom5["contribution"] = (bottom5["contribution"] * 100).round(2).astype(str) + "%"
+        st.dataframe(bottom5, use_container_width=True, hide_index=True)
+    
+    # Contribution bar chart
+    contrib_chart = contributions_df[["symbol", "contribution"]].copy()
+    contrib_chart = contrib_chart.set_index("symbol")
+    contrib_chart["contribution"] = contrib_chart["contribution"] * 100
+    st.bar_chart(contrib_chart, use_container_width=True)
+
+st.markdown("---")
 
 # Portfolio Holdings Section
 st.header("Current Portfolio Holdings")

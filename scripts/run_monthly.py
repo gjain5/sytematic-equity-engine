@@ -33,6 +33,14 @@ from engine.performance import (
     compute_rolling_return,
     compute_performance_summary,
 )
+from engine.analysis import (
+    compute_turnover,
+    compute_churn_stats,
+    compute_return_contribution,
+    compute_concentration_metrics,
+    simulate_with_costs,
+    compute_robustness_summary,
+)
 
 
 def parse_date(date_string: str) -> date:
@@ -305,6 +313,69 @@ def compute_and_save_performance(
     summary["num_positions"] = portfolio.num_positions
     summary["rebalance_date"] = as_of_date.isoformat()
     
+    # ========== ROBUSTNESS ANALYSIS ==========
+    
+    # Load previous portfolio for turnover calculation
+    prev_portfolio_path = config.artifacts_path / "portfolio_prev.csv"
+    if config.portfolio_path.exists():
+        # Move current to prev before saving new
+        try:
+            prev_df = pd.read_csv(config.portfolio_path)
+            prev_holdings = dict(zip(prev_df["symbol"], prev_df["weight"]))
+        except Exception:
+            prev_holdings = {}
+    else:
+        prev_holdings = {}
+    
+    # Compute turnover
+    turnover = compute_turnover(prev_holdings, portfolio.holdings)
+    churn = compute_churn_stats(prev_holdings, portfolio.holdings)
+    
+    summary["turnover"] = round(turnover, 4)
+    summary["positions_added"] = churn["positions_added"]
+    summary["positions_removed"] = churn["positions_removed"]
+    
+    # Compute return contribution (using momentum as proxy for expected return)
+    contributions = compute_return_contribution(portfolio.holdings, momentum)
+    concentration = compute_concentration_metrics(contributions)
+    
+    summary["top5_contribution_pct"] = concentration.get("top5_pct_of_total", 0)
+    summary["top_contributor"] = concentration.get("top_contributor", "")
+    summary["contribution_herfindahl"] = concentration.get("contribution_herfindahl", 0)
+    
+    # Transaction cost analysis (50 bps round-trip)
+    cost_bps = 50
+    turnover_list = [turnover] if turnover > 0 else [0.5]  # Assume initial 50% turnover
+    adjusted_nav, cost_summary = simulate_with_costs(
+        portfolio_nav=combined["portfolio_nav"],
+        rebalance_dates=[as_of_date],
+        turnover_per_rebalance=turnover_list,
+        cost_bps=cost_bps,
+    )
+    
+    summary["cost_bps"] = cost_bps
+    summary["return_after_costs"] = cost_summary["adjusted_return"]
+    summary["cost_drag_pct"] = cost_summary["return_drag_pct"]
+    
+    # Robustness summary
+    robustness = compute_robustness_summary(
+        turnover_history=[turnover],
+        holding_period_stats={"mean_holding_periods": 1},  # Single period
+        concentration_metrics=concentration,
+        cost_summary=cost_summary,
+    )
+    
+    summary["is_robust"] = robustness["is_robust"]
+    summary["robustness_flags"] = "|".join(robustness["robustness_flags"]) if robustness["robustness_flags"] else ""
+    
+    # Save contribution analysis
+    contrib_path = config.artifacts_path / "contributions.csv"
+    contributions.to_csv(contrib_path, index=False)
+    
+    # Add adjusted NAV to performance data
+    combined["portfolio_nav_after_costs"] = adjusted_nav
+    combined.to_csv(config.performance_path)
+    
     # Save metrics
     metrics_path = config.artifacts_path / "metrics.csv"
     pd.DataFrame([summary]).to_csv(metrics_path, index=False)
@@ -321,6 +392,18 @@ def compute_and_save_performance(
     print(f"    Alpha: {summary['alpha']*100:.1f}%")
     print(f"    Beta: {summary['beta']:.2f}")
     print(f"    Sharpe: {summary['sharpe_ratio']:.2f}")
+    
+    print()
+    print("  Robustness Analysis:")
+    print(f"    Turnover: {turnover*100:.1f}%")
+    print(f"    Positions Added: {churn['positions_added']}, Removed: {churn['positions_removed']}")
+    print(f"    Top 5 Contribution: {concentration.get('top5_pct_of_total', 0)*100:.1f}% of total")
+    print(f"    Return After Costs ({cost_bps}bps): {cost_summary['adjusted_return']*100:.1f}%")
+    print(f"    Cost Drag: {cost_summary['return_drag_pct']:.1f}%")
+    if robustness["robustness_flags"]:
+        print(f"    ⚠️  Flags: {', '.join(robustness['robustness_flags'])}")
+    else:
+        print(f"    ✓ No robustness concerns")
 
 
 def main():
