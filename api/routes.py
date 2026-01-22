@@ -86,3 +86,34 @@ async def get_performance() -> Dict[str, Any]:
             status_code=500,
             detail=f"Error reading performance: {str(e)}"
         )
+
+
+@router.get("/metrics")
+async def get_metrics() -> Dict[str, Any]:
+    """
+    Get performance metrics summary.
+    
+    Reads from artifacts/metrics.csv and returns as JSON.
+    """
+    metrics_path = ARTIFACTS_DIR / "metrics.csv"
+    
+    if not metrics_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Metrics file not found. Run the strategy first."
+        )
+    
+    try:
+        df = pd.read_csv(metrics_path)
+        if len(df) == 0:
+            return {"metrics": {}}
+        # Return first row as dict (most recent metrics)
+        return {
+            "metrics": df.iloc[0].to_dict(),
+            "source": "artifacts/metrics.csv"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error reading metrics: {str(e)}"
+        )

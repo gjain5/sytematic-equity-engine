@@ -9,6 +9,7 @@ Design decisions:
 
 from dataclasses import dataclass
 from datetime import date
+from pathlib import Path
 from typing import List, Optional
 import pandas as pd
 
@@ -46,21 +47,45 @@ def load_universe(
     
     Returns:
         Universe object with constituents
-    
-    Raises:
-        NotImplementedError: Placeholder - actual loading logic TBD
     """
-    raise NotImplementedError(
-        f"Universe loading not yet implemented. "
-        f"Called with: universe_name={universe_name}, as_of_date={as_of_date}"
+    if data_path is None:
+        project_root = Path(__file__).parent.parent
+        data_path = project_root / "data" / f"{universe_name}.csv"
+    else:
+        data_path = Path(data_path)
+    
+    if not data_path.exists():
+        raise FileNotFoundError(f"Universe file not found: {data_path}")
+    
+    df = pd.read_csv(data_path, comment="#")
+    
+    # Filter to symbols that were in the universe as of the given date
+    # This enables point-in-time universe membership
+    if "added_date" in df.columns:
+        df["added_date"] = pd.to_datetime(df["added_date"]).dt.date
+        df = df[df["added_date"] <= as_of_date]
+    
+    symbols = df["symbol"].tolist()
+    
+    return Universe(
+        name=universe_name,
+        as_of_date=as_of_date,
+        symbols=symbols
     )
 
 
 def get_available_universes() -> List[str]:
     """
     Return list of supported universe names.
-    
-    Raises:
-        NotImplementedError: Placeholder - actual logic TBD
     """
-    raise NotImplementedError("Available universes lookup not yet implemented")
+    project_root = Path(__file__).parent.parent
+    data_dir = project_root / "data"
+    
+    if not data_dir.exists():
+        return []
+    
+    universes = []
+    for f in data_dir.glob("*.csv"):
+        universes.append(f.stem)
+    
+    return sorted(universes)

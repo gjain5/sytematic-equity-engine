@@ -1,0 +1,103 @@
+# NIFTY 500 constituents (representative sample for development)
+# In production, this would be updated periodically from NSE
+# Format: symbol,name,sector,added_date
+symbol,name,sector,added_date
+RELIANCE,Reliance Industries Ltd,Energy,2000-01-01
+TCS,Tata Consultancy Services Ltd,IT,2000-01-01
+HDFCBANK,HDFC Bank Ltd,Financials,2000-01-01
+INFY,Infosys Ltd,IT,2000-01-01
+ICICIBANK,ICICI Bank Ltd,Financials,2000-01-01
+HINDUNILVR,Hindustan Unilever Ltd,Consumer,2000-01-01
+SBIN,State Bank of India,Financials,2000-01-01
+BHARTIARTL,Bharti Airtel Ltd,Telecom,2000-01-01
+KOTAKBANK,Kotak Mahindra Bank Ltd,Financials,2000-01-01
+ITC,ITC Ltd,Consumer,2000-01-01
+LT,Larsen & Toubro Ltd,Industrials,2000-01-01
+AXISBANK,Axis Bank Ltd,Financials,2000-01-01
+ASIANPAINT,Asian Paints Ltd,Consumer,2000-01-01
+MARUTI,Maruti Suzuki India Ltd,Auto,2000-01-01
+HCLTECH,HCL Technologies Ltd,IT,2000-01-01
+SUNPHARMA,Sun Pharmaceutical Industries Ltd,Pharma,2000-01-01
+TITAN,Titan Company Ltd,Consumer,2000-01-01
+BAJFINANCE,Bajaj Finance Ltd,Financials,2000-01-01
+WIPRO,Wipro Ltd,IT,2000-01-01
+ULTRACEMCO,UltraTech Cement Ltd,Materials,2000-01-01
+NTPC,NTPC Ltd,Utilities,2000-01-01
+POWERGRID,Power Grid Corporation of India Ltd,Utilities,2000-01-01
+NESTLEIND,Nestle India Ltd,Consumer,2000-01-01
+TATAMOTORS,Tata Motors Ltd,Auto,2000-01-01
+M&M,Mahindra & Mahindra Ltd,Auto,2000-01-01
+ONGC,Oil and Natural Gas Corporation Ltd,Energy,2000-01-01
+JSWSTEEL,JSW Steel Ltd,Materials,2000-01-01
+TATASTEEL,Tata Steel Ltd,Materials,2000-01-01
+ADANIENT,Adani Enterprises Ltd,Industrials,2000-01-01
+TECHM,Tech Mahindra Ltd,IT,2000-01-01
+COALINDIA,Coal India Ltd,Energy,2000-01-01
+HINDALCO,Hindalco Industries Ltd,Materials,2000-01-01
+BAJAJFINSV,Bajaj Finserv Ltd,Financials,2000-01-01
+GRASIM,Grasim Industries Ltd,Materials,2000-01-01
+DRREDDY,Dr. Reddys Laboratories Ltd,Pharma,2000-01-01
+DIVISLAB,Divis Laboratories Ltd,Pharma,2000-01-01
+CIPLA,Cipla Ltd,Pharma,2000-01-01
+EICHERMOT,Eicher Motors Ltd,Auto,2000-01-01
+BRITANNIA,Britannia Industries Ltd,Consumer,2000-01-01
+APOLLOHOSP,Apollo Hospitals Enterprise Ltd,Healthcare,2000-01-01
+HEROMOTOCO,Hero MotoCorp Ltd,Auto,2000-01-01
+INDUSINDBK,IndusInd Bank Ltd,Financials,2000-01-01
+BPCL,Bharat Petroleum Corporation Ltd,Energy,2000-01-01
+TATACONSUM,Tata Consumer Products Ltd,Consumer,2000-01-01
+SBILIFE,SBI Life Insurance Company Ltd,Financials,2000-01-01
+HDFCLIFE,HDFC Life Insurance Company Ltd,Financials,2000-01-01
+DABUR,Dabur India Ltd,Consumer,2000-01-01
+PIDILITIND,Pidilite Industries Ltd,Materials,2000-01-01
+HAVELLS,Havells India Ltd,Industrials,2000-01-01
+GODREJCP,Godrej Consumer Products Ltd,Consumer,2000-01-01
+SIEMENS,Siemens Ltd,Industrials,2000-01-01
+ABB,ABB India Ltd,Industrials,2000-01-01
+ICICIGI,ICICI Lombard General Insurance Company Ltd,Financials,2000-01-01
+AMBUJACEM,Ambuja Cements Ltd,Materials,2000-01-01
+SHREECEM,Shree Cement Ltd,Materials,2000-01-01
+BERGEPAINT,Berger Paints India Ltd,Consumer,2000-01-01
+BAJAJ-AUTO,Bajaj Auto Ltd,Auto,2000-01-01
+TORNTPHARM,Torrent Pharmaceuticals Ltd,Pharma,2000-01-01
+VEDL,Vedanta Ltd,Materials,2000-01-01
+DLF,DLF Ltd,Realty,2000-01-01
+TRENT,Trent Ltd,Consumer,2000-01-01
+ZOMATO,Zomato Ltd,Consumer,2020-01-01
+INDIGO,InterGlobe Aviation Ltd,Services,2015-01-01
+ADANIPORTS,Adani Ports and Special Economic Zone Ltd,Industrials,2000-01-01
+BANKBARODA,Bank of Baroda,Financials,2000-01-01
+PNB,Punjab National Bank,Financials,2000-01-01
+CANBK,Canara Bank,Financials,2000-01-01
+UNIONBANK,Union Bank of India,Financials,2000-01-01
+IOC,Indian Oil Corporation Ltd,Energy,2000-01-01
+GAIL,GAIL (India) Ltd,Energy,2000-01-01
+TATAPOWER,Tata Power Company Ltd,Utilities,2000-01-01
+ADANIGREEN,Adani Green Energy Ltd,Utilities,2020-01-01
+RECLTD,REC Ltd,Financials,2000-01-01
+PFC,Power Finance Corporation Ltd,Financials,2000-01-01
+IRFC,Indian Railway Finance Corporation Ltd,Financials,2020-01-01
+NHPC,NHPC Ltd,Utilities,2000-01-01
+SAIL,Steel Authority of India Ltd,Materials,2000-01-01
+NMDC,NMDC Ltd,Materials,2000-01-01
+JINDALSTEL,Jindal Steel & Power Ltd,Materials,2000-01-01
+TVSMOTOR,TVS Motor Company Ltd,Auto,2000-01-01
+MOTHERSON,Samvardhana Motherson International Ltd,Auto,2000-01-01
+BOSCHLTD,Bosch Ltd,Auto,2000-01-01
+MRF,MRF Ltd,Auto,2000-01-01
+EXIDEIND,Exide Industries Ltd,Auto,2000-01-01
+APOLLOTYRE,Apollo Tyres Ltd,Auto,2000-01-01
+BALKRISIND,Balkrishna Industries Ltd,Auto,2000-01-01
+BHARATFORG,Bharat Forge Ltd,Auto,2000-01-01
+AUROPHARMA,Aurobindo Pharma Ltd,Pharma,2000-01-01
+LUPIN,Lupin Ltd,Pharma,2000-01-01
+BIOCON,Biocon Ltd,Pharma,2000-01-01
+ALKEM,Alkem Laboratories Ltd,Pharma,2000-01-01
+IPCALAB,Ipca Laboratories Ltd,Pharma,2000-01-01
+LAURUSLABS,Laurus Labs Ltd,Pharma,2015-01-01
+MAXHEALTH,Max Healthcare Institute Ltd,Healthcare,2020-01-01
+FORTIS,Fortis Healthcare Ltd,Healthcare,2000-01-01
+PAGEIND,Page Industries Ltd,Consumer,2000-01-01
+COLPAL,Colgate-Palmolive (India) Ltd,Consumer,2000-01-01
+MARICO,Marico Ltd,Consumer,2000-01-01
+EMAMILTD,Emami Ltd,Consumer,2000-01-01
