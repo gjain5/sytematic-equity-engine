@@ -32,24 +32,36 @@ st.set_page_config(
 )
 
 # ==============================================================================
+# REBALANCE FREQUENCY MAPPING
+# ==============================================================================
+
+FREQ_SUFFIX_MAP = {
+    "Monthly": "",
+    "Weekly": "_weekly",
+}
+
+
+# ==============================================================================
 # DATA LOADERS (pure consumers - no computation)
 # ==============================================================================
 
 @st.cache_data(ttl=60)
-def load_metrics() -> dict:
+def load_metrics(freq_suffix: str = "") -> dict:
     """Load strategy metrics from API."""
+    endpoint = f"metrics{freq_suffix}" if freq_suffix else "metrics"
     try:
-        r = requests.get(f"{API_BASE}/metrics", timeout=10)
+        r = requests.get(f"{API_BASE}/{endpoint}", timeout=10)
         return r.json().get("metrics", {}) if r.status_code == 200 else {}
     except Exception:
         return {}
 
 
 @st.cache_data(ttl=60)
-def load_performance() -> pd.DataFrame:
+def load_performance(freq_suffix: str = "") -> pd.DataFrame:
     """Load NAV time series from API."""
+    endpoint = f"performance{freq_suffix}" if freq_suffix else "performance"
     try:
-        r = requests.get(f"{API_BASE}/performance", timeout=10)
+        r = requests.get(f"{API_BASE}/{endpoint}", timeout=10)
         if r.status_code == 200:
             df = pd.DataFrame(r.json().get("performance", []))
             if "date" in df.columns:
@@ -82,20 +94,22 @@ def load_contributions() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=60)
-def load_rebalances() -> pd.DataFrame:
+def load_rebalances(freq_suffix: str = "") -> pd.DataFrame:
     """Load rebalance history from API."""
+    endpoint = f"rebalances{freq_suffix}" if freq_suffix else "rebalances"
     try:
-        r = requests.get(f"{API_BASE}/rebalances", timeout=10)
+        r = requests.get(f"{API_BASE}/{endpoint}", timeout=10)
         return pd.DataFrame(r.json().get("rebalances", [])) if r.status_code == 200 else pd.DataFrame()
     except Exception:
         return pd.DataFrame()
 
 
 @st.cache_data(ttl=60)
-def load_holding_periods() -> pd.DataFrame:
+def load_holding_periods(freq_suffix: str = "") -> pd.DataFrame:
     """Load holding period analysis from API."""
+    endpoint = f"holding_periods{freq_suffix}" if freq_suffix else "holding_periods"
     try:
-        r = requests.get(f"{API_BASE}/holding_periods", timeout=10)
+        r = requests.get(f"{API_BASE}/{endpoint}", timeout=10)
         return pd.DataFrame(r.json().get("holding_periods", [])) if r.status_code == 200 else pd.DataFrame()
     except Exception:
         return pd.DataFrame()
@@ -106,20 +120,22 @@ def load_holding_periods() -> pd.DataFrame:
 # ==============================================================================
 
 @st.cache_data(ttl=60)
-def load_metrics_value() -> dict:
+def load_metrics_value(freq_suffix: str = "") -> dict:
     """Load Value strategy metrics from API."""
+    endpoint = f"metrics_value{freq_suffix}"
     try:
-        r = requests.get(f"{API_BASE}/metrics_value", timeout=10)
+        r = requests.get(f"{API_BASE}/{endpoint}", timeout=10)
         return r.json().get("metrics", {}) if r.status_code == 200 else {}
     except Exception:
         return {}
 
 
 @st.cache_data(ttl=60)
-def load_performance_value() -> pd.DataFrame:
+def load_performance_value(freq_suffix: str = "") -> pd.DataFrame:
     """Load Value strategy performance time series."""
+    endpoint = f"performance_value{freq_suffix}"
     try:
-        r = requests.get(f"{API_BASE}/performance_value", timeout=10)
+        r = requests.get(f"{API_BASE}/{endpoint}", timeout=10)
         if r.status_code == 200:
             df = pd.DataFrame(r.json().get("performance", []))
             if "date" in df.columns:
@@ -132,20 +148,22 @@ def load_performance_value() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=60)
-def load_rebalances_value() -> pd.DataFrame:
+def load_rebalances_value(freq_suffix: str = "") -> pd.DataFrame:
     """Load Value strategy rebalance history."""
+    endpoint = f"rebalances_value{freq_suffix}"
     try:
-        r = requests.get(f"{API_BASE}/rebalances_value", timeout=10)
+        r = requests.get(f"{API_BASE}/{endpoint}", timeout=10)
         return pd.DataFrame(r.json().get("rebalances", [])) if r.status_code == 200 else pd.DataFrame()
     except Exception:
         return pd.DataFrame()
 
 
 @st.cache_data(ttl=60)
-def load_holding_periods_value() -> pd.DataFrame:
+def load_holding_periods_value(freq_suffix: str = "") -> pd.DataFrame:
     """Load Value strategy holding periods."""
+    endpoint = f"holding_periods_value{freq_suffix}"
     try:
-        r = requests.get(f"{API_BASE}/holding_periods_value", timeout=10)
+        r = requests.get(f"{API_BASE}/{endpoint}", timeout=10)
         return pd.DataFrame(r.json().get("holding_periods", [])) if r.status_code == 200 else pd.DataFrame()
     except Exception:
         return pd.DataFrame()
@@ -156,20 +174,22 @@ def load_holding_periods_value() -> pd.DataFrame:
 # ==============================================================================
 
 @st.cache_data(ttl=60)
-def load_metrics_blend() -> dict:
+def load_metrics_blend(freq_suffix: str = "") -> dict:
     """Load Blend (75% Mom / 25% Val) strategy metrics from API."""
+    endpoint = f"metrics_blend{freq_suffix}"
     try:
-        r = requests.get(f"{API_BASE}/metrics_blend", timeout=10)
+        r = requests.get(f"{API_BASE}/{endpoint}", timeout=10)
         return r.json().get("metrics", {}) if r.status_code == 200 else {}
     except Exception:
         return {}
 
 
 @st.cache_data(ttl=60)
-def load_performance_blend() -> pd.DataFrame:
+def load_performance_blend(freq_suffix: str = "") -> pd.DataFrame:
     """Load Blend strategy performance time series."""
+    endpoint = f"performance_blend{freq_suffix}"
     try:
-        r = requests.get(f"{API_BASE}/performance_blend", timeout=10)
+        r = requests.get(f"{API_BASE}/{endpoint}", timeout=10)
         if r.status_code == 200:
             df = pd.DataFrame(r.json().get("performance", []))
             if "date" in df.columns:
@@ -182,20 +202,22 @@ def load_performance_blend() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=60)
-def load_rebalances_blend() -> pd.DataFrame:
+def load_rebalances_blend(freq_suffix: str = "") -> pd.DataFrame:
     """Load Blend strategy rebalance history."""
+    endpoint = f"rebalances_blend{freq_suffix}"
     try:
-        r = requests.get(f"{API_BASE}/rebalances_blend", timeout=10)
+        r = requests.get(f"{API_BASE}/{endpoint}", timeout=10)
         return pd.DataFrame(r.json().get("rebalances", [])) if r.status_code == 200 else pd.DataFrame()
     except Exception:
         return pd.DataFrame()
 
 
 @st.cache_data(ttl=60)
-def load_holding_periods_blend() -> pd.DataFrame:
+def load_holding_periods_blend(freq_suffix: str = "") -> pd.DataFrame:
     """Load Blend strategy holding periods."""
+    endpoint = f"holding_periods_blend{freq_suffix}"
     try:
-        r = requests.get(f"{API_BASE}/holding_periods_blend", timeout=10)
+        r = requests.get(f"{API_BASE}/{endpoint}", timeout=10)
         return pd.DataFrame(r.json().get("holding_periods", [])) if r.status_code == 200 else pd.DataFrame()
     except Exception:
         return pd.DataFrame()
@@ -208,6 +230,17 @@ def load_holding_periods_blend() -> pd.DataFrame:
 st.sidebar.title("📊 Strategy Dashboard")
 st.sidebar.markdown("---")
 
+# Rebalance frequency selector
+rebalance_freq = st.sidebar.selectbox(
+    "Rebalance Frequency",
+    options=list(FREQ_SUFFIX_MAP.keys()),
+    index=0,
+    help="Select precomputed backtest results to view"
+)
+freq_suffix = FREQ_SUFFIX_MAP[rebalance_freq]
+
+st.sidebar.markdown("---")
+
 page = st.sidebar.radio(
     "Navigate",
     ["Overview", "Performance", "Robustness & Risk", "Portfolio", "Rebalance History", "🧠 Strategy Comparison"],
@@ -215,15 +248,16 @@ page = st.sidebar.radio(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.caption("Momentum Strategy | Read-only")
+st.sidebar.caption(f"Momentum Strategy | {rebalance_freq} | Read-only")
+st.sidebar.caption("Data Source: Precomputed Backtest")
 
-# Load all data once
-metrics = load_metrics()
-performance_df = load_performance()
+# Load all data once with selected frequency
+metrics = load_metrics(freq_suffix)
+performance_df = load_performance(freq_suffix)
 portfolio_df = load_portfolio()
 contributions_df = load_contributions()
-rebalances_df = load_rebalances()
-holding_periods_df = load_holding_periods()
+rebalances_df = load_rebalances(freq_suffix)
+holding_periods_df = load_holding_periods(freq_suffix)
 
 # ==============================================================================
 # PAGE 1: OVERVIEW
@@ -232,10 +266,10 @@ holding_periods_df = load_holding_periods()
 
 if page == "Overview":
     st.title("Strategy Overview")
-    st.markdown("*Quick health check: Is the strategy working?*")
+    st.markdown(f"*Quick health check: Is the strategy working? ({rebalance_freq} rebalance)*")
     
     if not metrics:
-        st.error("No metrics available. Run backtest first.")
+        st.warning(f"No {rebalance_freq.lower()} metrics available. Run backtest with appropriate --rebalance-freq.")
         st.stop()
     
     # --- Strategy Metadata ---
@@ -243,7 +277,7 @@ if page == "Overview":
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Strategy", "Momentum (12-1)")
     col2.metric("Universe", "Nifty 500")
-    col3.metric("Rebalance", "Monthly")
+    col3.metric("Rebalance", rebalance_freq)
     col4.metric("Positions", metrics.get("unique_symbols_held", 30))
     
     st.markdown("---")
@@ -740,24 +774,24 @@ elif page == "Rebalance History":
 
 elif page == "🧠 Strategy Comparison":
     st.title("Strategy Comparison")
-    st.markdown("*How do Momentum, Value, and the Blend differ in behavior and risk?*")
+    st.markdown(f"*How do Momentum, Value, and the Blend differ? ({rebalance_freq} rebalance)*")
     
-    # Load all strategy data
-    metrics_mom = metrics  # Already loaded
-    metrics_val = load_metrics_value()
-    metrics_blend = load_metrics_blend()
+    # Load all strategy data with selected frequency
+    metrics_mom = metrics  # Already loaded with freq_suffix
+    metrics_val = load_metrics_value(freq_suffix)
+    metrics_blend = load_metrics_blend(freq_suffix)
     
-    perf_mom = performance_df  # Already loaded
-    perf_val = load_performance_value()
-    perf_blend = load_performance_blend()
+    perf_mom = performance_df  # Already loaded with freq_suffix
+    perf_val = load_performance_value(freq_suffix)
+    perf_blend = load_performance_blend(freq_suffix)
     
-    rebal_mom = rebalances_df  # Already loaded
-    rebal_val = load_rebalances_value()
-    rebal_blend = load_rebalances_blend()
+    rebal_mom = rebalances_df  # Already loaded with freq_suffix
+    rebal_val = load_rebalances_value(freq_suffix)
+    rebal_blend = load_rebalances_blend(freq_suffix)
     
-    hold_mom = holding_periods_df  # Already loaded
-    hold_val = load_holding_periods_value()
-    hold_blend = load_holding_periods_blend()
+    hold_mom = holding_periods_df  # Already loaded with freq_suffix
+    hold_val = load_holding_periods_value(freq_suffix)
+    hold_blend = load_holding_periods_blend(freq_suffix)
     
     # Check data availability
     has_momentum = bool(metrics_mom)
@@ -765,7 +799,7 @@ elif page == "🧠 Strategy Comparison":
     has_blend = bool(metrics_blend)
     
     if not has_momentum and not has_value and not has_blend:
-        st.error("No strategy data available. Run backtests first.")
+        st.warning(f"No {rebalance_freq.lower()} strategy data available. Run backtests with appropriate --rebalance-freq.")
         st.stop()
     
     st.markdown("---")

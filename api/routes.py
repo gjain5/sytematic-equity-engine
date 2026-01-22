@@ -316,3 +316,171 @@ async def get_holding_periods_blend() -> Dict[str, Any]:
         return {"holding_periods": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/holding_periods_blend.csv"}
     except Exception as e:
         return {"holding_periods": [], "error": str(e)}
+
+
+# ==============================================================================
+# WEEKLY REBALANCE ENDPOINTS (MOMENTUM)
+# ==============================================================================
+
+@router.get("/metrics_weekly")
+async def get_metrics_weekly() -> Dict[str, Any]:
+    """Get Momentum strategy weekly metrics."""
+    path = ARTIFACTS_DIR / "metrics_weekly.csv"
+    if not path.exists():
+        return {"metrics": {}, "error": "Weekly metrics not found"}
+    try:
+        df = pd.read_csv(path)
+        return {"metrics": df.iloc[0].to_dict() if len(df) > 0 else {}, "source": "artifacts/metrics_weekly.csv"}
+    except Exception as e:
+        return {"metrics": {}, "error": str(e)}
+
+
+@router.get("/performance_weekly")
+async def get_performance_weekly() -> Dict[str, Any]:
+    """Get Momentum strategy weekly performance."""
+    path = ARTIFACTS_DIR / "performance_weekly.csv"
+    if not path.exists():
+        return {"performance": [], "error": "Weekly performance not found"}
+    try:
+        df = pd.read_csv(path)
+        return {"performance": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/performance_weekly.csv"}
+    except Exception as e:
+        return {"performance": [], "error": str(e)}
+
+
+@router.get("/rebalances_weekly")
+async def get_rebalances_weekly() -> Dict[str, Any]:
+    """Get Momentum strategy weekly rebalances."""
+    path = ARTIFACTS_DIR / "rebalances_weekly.csv"
+    if not path.exists():
+        return {"rebalances": [], "error": "Weekly rebalances not found"}
+    try:
+        df = pd.read_csv(path)
+        return {"rebalances": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/rebalances_weekly.csv"}
+    except Exception as e:
+        return {"rebalances": [], "error": str(e)}
+
+
+@router.get("/holding_periods_weekly")
+async def get_holding_periods_weekly() -> Dict[str, Any]:
+    """Get Momentum strategy weekly holding periods."""
+    path = ARTIFACTS_DIR / "holding_periods_weekly.csv"
+    if not path.exists():
+        return {"holding_periods": [], "error": "Weekly holding periods not found"}
+    try:
+        df = pd.read_csv(path)
+        return {"holding_periods": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/holding_periods_weekly.csv"}
+    except Exception as e:
+        return {"holding_periods": [], "error": str(e)}
+
+
+# ==============================================================================
+# WEEKLY REBALANCE ENDPOINTS (VALUE)
+# ==============================================================================
+
+@router.get("/metrics_value_weekly")
+async def get_metrics_value_weekly() -> Dict[str, Any]:
+    """Get Value strategy weekly metrics."""
+    path = ARTIFACTS_DIR / "metrics_value_weekly.csv"
+    if not path.exists():
+        return {"metrics": {}, "error": "Value weekly metrics not found"}
+    try:
+        df = pd.read_csv(path)
+        return {"metrics": df.iloc[0].to_dict() if len(df) > 0 else {}, "source": "artifacts/metrics_value_weekly.csv"}
+    except Exception as e:
+        return {"metrics": {}, "error": str(e)}
+
+
+@router.get("/performance_value_weekly")
+async def get_performance_value_weekly() -> Dict[str, Any]:
+    """Get Value strategy weekly performance."""
+    path = ARTIFACTS_DIR / "performance_value_weekly.csv"
+    if not path.exists():
+        return {"performance": [], "error": "Value weekly performance not found"}
+    try:
+        df = pd.read_csv(path)
+        return {"performance": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/performance_value_weekly.csv"}
+    except Exception as e:
+        return {"performance": [], "error": str(e)}
+
+
+@router.get("/rebalances_value_weekly")
+async def get_rebalances_value_weekly() -> Dict[str, Any]:
+    """Get Value strategy weekly rebalances."""
+    path = ARTIFACTS_DIR / "rebalances_value_weekly.csv"
+    if not path.exists():
+        return {"rebalances": [], "error": "Value weekly rebalances not found"}
+    try:
+        df = pd.read_csv(path)
+        return {"rebalances": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/rebalances_value_weekly.csv"}
+    except Exception as e:
+        return {"rebalances": [], "error": str(e)}
+
+
+@router.get("/holding_periods_value_weekly")
+async def get_holding_periods_value_weekly() -> Dict[str, Any]:
+    """Get Value strategy weekly holding periods."""
+    path = ARTIFACTS_DIR / "holding_periods_value_weekly.csv"
+    if not path.exists():
+        return {"holding_periods": [], "error": "Value weekly holding periods not found"}
+    try:
+        df = pd.read_csv(path)
+        return {"holding_periods": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/holding_periods_value_weekly.csv"}
+    except Exception as e:
+        return {"holding_periods": [], "error": str(e)}
+
+
+# ==============================================================================
+# WEEKLY REBALANCE ENDPOINTS (BLEND)
+# ==============================================================================
+
+@router.get("/metrics_blend_weekly")
+async def get_metrics_blend_weekly() -> Dict[str, Any]:
+    """Get Blend strategy weekly metrics."""
+    path = ARTIFACTS_DIR / "metrics_blend_weekly.csv"
+    if not path.exists():
+        return {"metrics": {}, "error": "Blend weekly metrics not found"}
+    try:
+        df = pd.read_csv(path)
+        return {"metrics": df.iloc[0].to_dict() if len(df) > 0 else {}, "source": "artifacts/metrics_blend_weekly.csv"}
+    except Exception as e:
+        return {"metrics": {}, "error": str(e)}
+
+
+@router.get("/performance_blend_weekly")
+async def get_performance_blend_weekly() -> Dict[str, Any]:
+    """Get Blend strategy weekly performance."""
+    path = ARTIFACTS_DIR / "performance_blend_weekly.csv"
+    if not path.exists():
+        return {"performance": [], "error": "Blend weekly performance not found"}
+    try:
+        df = pd.read_csv(path)
+        return {"performance": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/performance_blend_weekly.csv"}
+    except Exception as e:
+        return {"performance": [], "error": str(e)}
+
+
+@router.get("/rebalances_blend_weekly")
+async def get_rebalances_blend_weekly() -> Dict[str, Any]:
+    """Get Blend strategy weekly rebalances."""
+    path = ARTIFACTS_DIR / "rebalances_blend_weekly.csv"
+    if not path.exists():
+        return {"rebalances": [], "error": "Blend weekly rebalances not found"}
+    try:
+        df = pd.read_csv(path)
+        return {"rebalances": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/rebalances_blend_weekly.csv"}
+    except Exception as e:
+        return {"rebalances": [], "error": str(e)}
+
+
+@router.get("/holding_periods_blend_weekly")
+async def get_holding_periods_blend_weekly() -> Dict[str, Any]:
+    """Get Blend strategy weekly holding periods."""
+    path = ARTIFACTS_DIR / "holding_periods_blend_weekly.csv"
+    if not path.exists():
+        return {"holding_periods": [], "error": "Blend weekly holding periods not found"}
+    try:
+        df = pd.read_csv(path)
+        return {"holding_periods": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/holding_periods_blend_weekly.csv"}
+    except Exception as e:
+        return {"holding_periods": [], "error": str(e)}
