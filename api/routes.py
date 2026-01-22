@@ -146,3 +146,61 @@ async def get_contributions() -> Dict[str, Any]:
             status_code=500,
             detail=f"Error reading contributions: {str(e)}"
         )
+
+
+@router.get("/rebalances")
+async def get_rebalances() -> Dict[str, Any]:
+    """
+    Get rebalance history with turnover and churn stats.
+    
+    Reads from artifacts/rebalances.csv and returns as JSON.
+    """
+    rebalances_path = ARTIFACTS_DIR / "rebalances.csv"
+    
+    if not rebalances_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Rebalances file not found. Run backtest first."
+        )
+    
+    try:
+        df = pd.read_csv(rebalances_path)
+        return {
+            "rebalances": df.to_dict(orient="records"),
+            "count": len(df),
+            "source": "artifacts/rebalances.csv"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error reading rebalances: {str(e)}"
+        )
+
+
+@router.get("/holding_periods")
+async def get_holding_periods() -> Dict[str, Any]:
+    """
+    Get holding period analysis per symbol.
+    
+    Reads from artifacts/holding_periods.csv and returns as JSON.
+    """
+    holdings_path = ARTIFACTS_DIR / "holding_periods.csv"
+    
+    if not holdings_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Holding periods file not found. Run backtest first."
+        )
+    
+    try:
+        df = pd.read_csv(holdings_path)
+        return {
+            "holding_periods": df.to_dict(orient="records"),
+            "count": len(df),
+            "source": "artifacts/holding_periods.csv"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error reading holding periods: {str(e)}"
+        )
