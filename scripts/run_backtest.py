@@ -47,18 +47,28 @@ def parse_date(date_string: str) -> date:
     return datetime.strptime(date_string, "%Y-%m-%d").date()
 
 
-def generate_rebalance_dates(start_date: date, end_date: date, day_of_month: int = 15) -> List[date]:
+def generate_rebalance_dates(
+    start_date: date, 
+    end_date: date, 
+    frequency: str = "monthly",
+    day_of_month: int = 15
+) -> List[date]:
     """
-    Generate monthly rebalance dates between start and end.
+    Generate rebalance dates between start and end.
     
     Args:
         start_date: First possible rebalance date
         end_date: Last possible rebalance date
-        day_of_month: Day of month to rebalance (default 15th)
+        frequency: "monthly" or "weekly"
+        day_of_month: Day of month to rebalance for monthly (default 15th)
     
     Returns:
         List of rebalance dates
     """
+    if frequency == "weekly":
+        return generate_weekly_rebalance_dates(start_date, end_date)
+    
+    # Monthly rebalance logic
     dates = []
     current = date(start_date.year, start_date.month, day_of_month)
     
@@ -76,6 +86,34 @@ def generate_rebalance_dates(start_date: date, end_date: date, day_of_month: int
             current = date(current.year + 1, 1, day_of_month)
         else:
             current = date(current.year, current.month + 1, day_of_month)
+    
+    return dates
+
+
+def generate_weekly_rebalance_dates(start_date: date, end_date: date, weekday: int = 4) -> List[date]:
+    """
+    Generate weekly rebalance dates (default Friday).
+    
+    Args:
+        start_date: First possible rebalance date
+        end_date: Last possible rebalance date
+        weekday: Day of week (0=Monday, 4=Friday)
+    
+    Returns:
+        List of rebalance dates
+    """
+    from datetime import timedelta
+    
+    dates = []
+    current = start_date
+    
+    # Find first Friday on or after start_date
+    days_until_friday = (weekday - current.weekday()) % 7
+    current = current + timedelta(days=days_until_friday)
+    
+    while current <= end_date:
+        dates.append(current)
+        current = current + timedelta(days=7)
     
     return dates
 
@@ -581,6 +619,7 @@ def run_backtest(
     strategy: str = "momentum",
     momentum_weight: float = 0.75,
     value_weight: float = 0.25,
+    rebalance_freq: str = "monthly",
 ) -> None:
     """
     Run multi-period backtest.
@@ -593,18 +632,22 @@ def run_backtest(
         strategy: Strategy type - "momentum", "value", or "blend"
         momentum_weight: Weight for momentum in blend (default 0.75)
         value_weight: Weight for value in blend (default 0.25)
+        rebalance_freq: Rebalance frequency - "monthly" or "weekly"
     """
     config = get_default_config()
+    
+    # Frequency suffix for artifacts
+    freq_suffix = "_weekly" if rebalance_freq == "weekly" else ""
     
     # Select rebalance function based on strategy
     if strategy == "momentum":
         rebalance_fn = run_single_rebalance_momentum
         strategy_name = "MOMENTUM"
-        artifact_suffix = ""
+        artifact_suffix = "" + freq_suffix
     elif strategy == "value":
         rebalance_fn = run_single_rebalance_value
         strategy_name = "VALUE"
-        artifact_suffix = "_value"
+        artifact_suffix = "_value" + freq_suffix
     elif strategy == "blend":
         # Create a partial function with weights
         def rebalance_fn(as_of_date, prices, universe_symbols, prev_holdings, max_positions):
@@ -613,17 +656,17 @@ def run_backtest(
                 momentum_weight=momentum_weight, value_weight=value_weight
             )
         strategy_name = f"BLEND (Mom:{int(momentum_weight*100)}%, Val:{int(value_weight*100)}%)"
-        artifact_suffix = "_blend"
+        artifact_suffix = "_blend" + freq_suffix
     else:
         raise ValueError(f"Unknown strategy: {strategy}. Use 'momentum', 'value', or 'blend'")
     
     print("=" * 70)
-    print(f"MULTI-PERIOD BACKTEST ({strategy_name}): {start_date} to {end_date}")
+    print(f"MULTI-PERIOD BACKTEST ({strategy_name}, {rebalance_freq.upper()}): {start_date} to {end_date}")
     print("=" * 70)
     
     # Generate rebalance dates
-    rebalance_dates = generate_rebalance_dates(start_date, end_date)
-    print(f"Rebalance dates: {len(rebalance_dates)} monthly rebalances")
+    rebalance_dates = generate_rebalance_dates(start_date, end_date, frequency=rebalance_freq)
+    print(f"Rebalance dates: {len(rebalance_dates)} {rebalance_freq} rebalances")
     print(f"First: {rebalance_dates[0]}, Last: {rebalance_dates[-1]}")
     print()
     
@@ -832,6 +875,13 @@ def main():
         default=0.25,
         help="Value weight for blend strategy (default: 0.25)"
     )
+    parser.add_argument(
+        "--rebalance-freq",
+        type=str,
+        choices=["monthly", "weekly"],
+        default="monthly",
+        help="Rebalance frequency: monthly or weekly (default: monthly)"
+    )
     
     args = parser.parse_args()
     run_backtest(
@@ -842,6 +892,7 @@ def main():
         strategy=args.strategy,
         momentum_weight=args.momentum_weight,
         value_weight=args.value_weight,
+        rebalance_freq=args.rebalance_freq,
     )
 
 
