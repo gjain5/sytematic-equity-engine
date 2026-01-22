@@ -204,3 +204,115 @@ async def get_holding_periods() -> Dict[str, Any]:
             status_code=500,
             detail=f"Error reading holding periods: {str(e)}"
         )
+
+
+# ==============================================================================
+# VALUE STRATEGY ENDPOINTS
+# ==============================================================================
+
+@router.get("/metrics_value")
+async def get_metrics_value() -> Dict[str, Any]:
+    """Get Value strategy metrics."""
+    metrics_path = ARTIFACTS_DIR / "metrics_value.csv"
+    if not metrics_path.exists():
+        return {"metrics": {}, "error": "Value metrics not found"}
+    try:
+        df = pd.read_csv(metrics_path)
+        return {"metrics": df.iloc[0].to_dict() if len(df) > 0 else {}, "source": "artifacts/metrics_value.csv"}
+    except Exception as e:
+        return {"metrics": {}, "error": str(e)}
+
+
+@router.get("/performance_value")
+async def get_performance_value() -> Dict[str, Any]:
+    """Get Value strategy performance time series."""
+    perf_path = ARTIFACTS_DIR / "performance_value.csv"
+    if not perf_path.exists():
+        return {"performance": [], "error": "Value performance not found"}
+    try:
+        df = pd.read_csv(perf_path)
+        return {"performance": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/performance_value.csv"}
+    except Exception as e:
+        return {"performance": [], "error": str(e)}
+
+
+@router.get("/rebalances_value")
+async def get_rebalances_value() -> Dict[str, Any]:
+    """Get Value strategy rebalance history."""
+    rebal_path = ARTIFACTS_DIR / "rebalances_value.csv"
+    if not rebal_path.exists():
+        return {"rebalances": [], "error": "Value rebalances not found"}
+    try:
+        df = pd.read_csv(rebal_path)
+        return {"rebalances": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/rebalances_value.csv"}
+    except Exception as e:
+        return {"rebalances": [], "error": str(e)}
+
+
+@router.get("/holding_periods_value")
+async def get_holding_periods_value() -> Dict[str, Any]:
+    """Get Value strategy holding periods."""
+    hold_path = ARTIFACTS_DIR / "holding_periods_value.csv"
+    if not hold_path.exists():
+        return {"holding_periods": [], "error": "Value holding periods not found"}
+    try:
+        df = pd.read_csv(hold_path)
+        return {"holding_periods": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/holding_periods_value.csv"}
+    except Exception as e:
+        return {"holding_periods": [], "error": str(e)}
+
+
+# ==============================================================================
+# BLEND STRATEGY ENDPOINTS
+# ==============================================================================
+
+@router.get("/metrics_blend")
+async def get_metrics_blend() -> Dict[str, Any]:
+    """Get Blend (75% Momentum / 25% Value) strategy metrics."""
+    metrics_path = ARTIFACTS_DIR / "metrics_blend.csv"
+    if not metrics_path.exists():
+        return {"metrics": {}, "error": "Blend metrics not found"}
+    try:
+        df = pd.read_csv(metrics_path)
+        return {"metrics": df.iloc[0].to_dict() if len(df) > 0 else {}, "source": "artifacts/metrics_blend.csv"}
+    except Exception as e:
+        return {"metrics": {}, "error": str(e)}
+
+
+@router.get("/performance_blend")
+async def get_performance_blend() -> Dict[str, Any]:
+    """Get Blend strategy performance time series."""
+    perf_path = ARTIFACTS_DIR / "performance_blend.csv"
+    if not perf_path.exists():
+        return {"performance": [], "error": "Blend performance not found"}
+    try:
+        df = pd.read_csv(perf_path)
+        return {"performance": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/performance_blend.csv"}
+    except Exception as e:
+        return {"performance": [], "error": str(e)}
+
+
+@router.get("/rebalances_blend")
+async def get_rebalances_blend() -> Dict[str, Any]:
+    """Get Blend strategy rebalance history."""
+    rebal_path = ARTIFACTS_DIR / "rebalances_blend.csv"
+    if not rebal_path.exists():
+        return {"rebalances": [], "error": "Blend rebalances not found"}
+    try:
+        df = pd.read_csv(rebal_path)
+        return {"rebalances": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/rebalances_blend.csv"}
+    except Exception as e:
+        return {"rebalances": [], "error": str(e)}
+
+
+@router.get("/holding_periods_blend")
+async def get_holding_periods_blend() -> Dict[str, Any]:
+    """Get Blend strategy holding periods."""
+    hold_path = ARTIFACTS_DIR / "holding_periods_blend.csv"
+    if not hold_path.exists():
+        return {"holding_periods": [], "error": "Blend holding periods not found"}
+    try:
+        df = pd.read_csv(hold_path)
+        return {"holding_periods": df.to_dict(orient="records"), "count": len(df), "source": "artifacts/holding_periods_blend.csv"}
+    except Exception as e:
+        return {"holding_periods": [], "error": str(e)}

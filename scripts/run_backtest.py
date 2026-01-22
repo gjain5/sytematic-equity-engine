@@ -27,6 +27,7 @@ import numpy as np
 from engine.config import get_default_config
 from engine.universe import load_universe
 from engine.factors.momentum import compute_momentum
+from engine.factors.value import compute_value_from_symbols
 from engine.portfolio import construct_portfolio_from_scores
 from engine.data import load_prices_from_csv, fetch_prices_yfinance, save_prices_to_csv
 from engine.performance import fetch_benchmark_prices, compute_performance_summary
@@ -145,7 +146,7 @@ def ensure_benchmark_data(
     return benchmark
 
 
-def run_single_rebalance(
+def run_single_rebalance_momentum(
     as_of_date: date,
     prices: pd.DataFrame,
     universe_symbols: List[str],
@@ -153,16 +154,16 @@ def run_single_rebalance(
     max_positions: int = 30,
 ) -> Tuple[Dict[str, float], pd.Series, Dict]:
     """
-    Run a single rebalance and return holdings + metrics.
+    Run a single MOMENTUM rebalance and return holdings + metrics.
     
     Returns:
-        Tuple of (new_holdings, momentum_scores, rebalance_info)
+        Tuple of (new_holdings, factor_scores, rebalance_info)
     """
     # Filter to available symbols
     available_symbols = [s for s in universe_symbols if s in prices.columns]
     
     # Compute momentum
-    momentum = compute_momentum(
+    factor_scores = compute_momentum(
         prices=prices[available_symbols],
         as_of_date=as_of_date,
         lookback_days=252,
@@ -171,7 +172,7 @@ def run_single_rebalance(
     
     # Construct portfolio
     portfolio = construct_portfolio_from_scores(
-        momentum_scores=momentum,
+        momentum_scores=factor_scores,
         as_of_date=as_of_date,
         max_positions=max_positions,
     )
@@ -183,7 +184,7 @@ def run_single_rebalance(
     churn = compute_churn_stats(prev_holdings, new_holdings)
     
     # Compute contribution analysis
-    contributions = compute_return_contribution(new_holdings, momentum)
+    contributions = compute_return_contribution(new_holdings, factor_scores)
     concentration = compute_concentration_metrics(contributions)
     
     rebalance_info = {
@@ -195,10 +196,166 @@ def run_single_rebalance(
         "symbols_added": churn["symbols_added"],
         "symbols_removed": churn["symbols_removed"],
         "top5_contribution_pct": concentration.get("top5_pct_of_total", 0),
-        "avg_momentum": momentum[list(new_holdings.keys())].mean(),
+        "avg_factor_score": factor_scores[list(new_holdings.keys())].mean(),
     }
     
-    return new_holdings, momentum, rebalance_info
+    return new_holdings, factor_scores, rebalance_info
+
+
+def run_single_rebalance_value(
+    as_of_date: date,
+    prices: pd.DataFrame,
+    universe_symbols: List[str],
+    prev_holdings: Dict[str, float],
+    max_positions: int = 30,
+) -> Tuple[Dict[str, float], pd.Series, Dict]:
+    """
+    Run a single VALUE rebalance and return holdings + metrics.
+    
+    Returns:
+        Tuple of (new_holdings, factor_scores, rebalance_info)
+    """
+    # Filter to available symbols
+    available_symbols = [s for s in universe_symbols if s in prices.columns]
+    
+    # Compute value factor (fetches fundamentals internally)
+    factor_scores = compute_value_from_symbols(
+        symbols=available_symbols,
+        as_of_date=as_of_date,
+    )
+    
+    if factor_scores.empty or len(factor_scores) < max_positions:
+        raise ValueError(f"Insufficient value data: got {len(factor_scores)} symbols, need {max_positions}")
+    
+    # Construct portfolio
+    portfolio = construct_portfolio_from_scores(
+        momentum_scores=factor_scores,  # Same interface, different factor
+        as_of_date=as_of_date,
+        max_positions=max_positions,
+    )
+    
+    new_holdings = portfolio.holdings
+    
+    # Compute turnover
+    turnover = compute_turnover(prev_holdings, new_holdings)
+    churn = compute_churn_stats(prev_holdings, new_holdings)
+    
+    # Compute contribution analysis
+    contributions = compute_return_contribution(new_holdings, factor_scores)
+    concentration = compute_concentration_metrics(contributions)
+    
+    rebalance_info = {
+        "date": as_of_date,
+        "num_positions": len(new_holdings),
+        "turnover": turnover,
+        "positions_added": churn["positions_added"],
+        "positions_removed": churn["positions_removed"],
+        "symbols_added": churn["symbols_added"],
+        "symbols_removed": churn["symbols_removed"],
+        "top5_contribution_pct": concentration.get("top5_pct_of_total", 0),
+        "avg_factor_score": factor_scores[list(new_holdings.keys())].mean(),
+    }
+    
+    return new_holdings, factor_scores, rebalance_info
+
+
+def run_single_rebalance_blend(
+    as_of_date: date,
+    prices: pd.DataFrame,
+    universe_symbols: List[str],
+    prev_holdings: Dict[str, float],
+    max_positions: int = 30,
+    momentum_weight: float = 0.75,
+    value_weight: float = 0.25,
+) -> Tuple[Dict[str, float], pd.Series, Dict]:
+    """
+    Run a single BLENDED (momentum + value) rebalance.
+    
+    Combines momentum and value z-scores with configurable weights.
+    Default: 75% momentum, 25% value.
+    
+    Returns:
+        Tuple of (new_holdings, blended_scores, rebalance_info)
+    """
+    # Filter to available symbols
+    available_symbols = [s for s in universe_symbols if s in prices.columns]
+    
+    # Compute momentum scores
+    momentum_scores = compute_momentum(
+        prices=prices[available_symbols],
+        as_of_date=as_of_date,
+        lookback_days=252,
+        skip_recent_days=21,
+    )
+    
+    # Compute value scores
+    value_scores = compute_value_from_symbols(
+        symbols=available_symbols,
+        as_of_date=as_of_date,
+    )
+    
+    # Find common symbols
+    common_symbols = list(set(momentum_scores.index) & set(value_scores.index))
+    if len(common_symbols) < max_positions:
+        raise ValueError(f"Insufficient overlap: got {len(common_symbols)} symbols, need {max_positions}")
+    
+    # Z-score normalize both factors
+    mom_subset = momentum_scores[common_symbols]
+    val_subset = value_scores[common_symbols]
+    
+    mom_z = (mom_subset - mom_subset.mean()) / mom_subset.std()
+    val_z = (val_subset - val_subset.mean()) / val_subset.std()
+    
+    # Blend scores
+    blended_scores = momentum_weight * mom_z + value_weight * val_z
+    blended_scores.name = "blended"
+    
+    # Construct portfolio
+    portfolio = construct_portfolio_from_scores(
+        momentum_scores=blended_scores,
+        as_of_date=as_of_date,
+        max_positions=max_positions,
+    )
+    
+    new_holdings = portfolio.holdings
+    
+    # Compute turnover
+    turnover = compute_turnover(prev_holdings, new_holdings)
+    churn = compute_churn_stats(prev_holdings, new_holdings)
+    
+    # Compute contribution analysis
+    contributions = compute_return_contribution(new_holdings, blended_scores)
+    concentration = compute_concentration_metrics(contributions)
+    
+    rebalance_info = {
+        "date": as_of_date,
+        "num_positions": len(new_holdings),
+        "turnover": turnover,
+        "positions_added": churn["positions_added"],
+        "positions_removed": churn["positions_removed"],
+        "symbols_added": churn["symbols_added"],
+        "symbols_removed": churn["symbols_removed"],
+        "top5_contribution_pct": concentration.get("top5_pct_of_total", 0),
+        "avg_factor_score": blended_scores[list(new_holdings.keys())].mean(),
+        "momentum_weight": momentum_weight,
+        "value_weight": value_weight,
+    }
+    
+    return new_holdings, blended_scores, rebalance_info
+
+
+# Backward compatibility alias
+def run_single_rebalance(
+    as_of_date: date,
+    prices: pd.DataFrame,
+    universe_symbols: List[str],
+    prev_holdings: Dict[str, float],
+    max_positions: int = 30,
+) -> Tuple[Dict[str, float], pd.Series, Dict]:
+    """Backward compatible wrapper - defaults to momentum."""
+    return run_single_rebalance_momentum(
+        as_of_date, prices, universe_symbols, prev_holdings, max_positions
+    )
 
 
 def simulate_backtest_nav(
@@ -421,6 +578,9 @@ def run_backtest(
     end_date: date,
     max_positions: int = 30,
     force_refresh: bool = False,
+    strategy: str = "momentum",
+    momentum_weight: float = 0.75,
+    value_weight: float = 0.25,
 ) -> None:
     """
     Run multi-period backtest.
@@ -430,11 +590,35 @@ def run_backtest(
         end_date: Last rebalance date
         max_positions: Max positions per rebalance
         force_refresh: Force re-download of data
+        strategy: Strategy type - "momentum", "value", or "blend"
+        momentum_weight: Weight for momentum in blend (default 0.75)
+        value_weight: Weight for value in blend (default 0.25)
     """
     config = get_default_config()
     
+    # Select rebalance function based on strategy
+    if strategy == "momentum":
+        rebalance_fn = run_single_rebalance_momentum
+        strategy_name = "MOMENTUM"
+        artifact_suffix = ""
+    elif strategy == "value":
+        rebalance_fn = run_single_rebalance_value
+        strategy_name = "VALUE"
+        artifact_suffix = "_value"
+    elif strategy == "blend":
+        # Create a partial function with weights
+        def rebalance_fn(as_of_date, prices, universe_symbols, prev_holdings, max_positions):
+            return run_single_rebalance_blend(
+                as_of_date, prices, universe_symbols, prev_holdings, max_positions,
+                momentum_weight=momentum_weight, value_weight=value_weight
+            )
+        strategy_name = f"BLEND (Mom:{int(momentum_weight*100)}%, Val:{int(value_weight*100)}%)"
+        artifact_suffix = "_blend"
+    else:
+        raise ValueError(f"Unknown strategy: {strategy}. Use 'momentum', 'value', or 'blend'")
+    
     print("=" * 70)
-    print(f"MULTI-PERIOD BACKTEST: {start_date} to {end_date}")
+    print(f"MULTI-PERIOD BACKTEST ({strategy_name}): {start_date} to {end_date}")
     print("=" * 70)
     
     # Generate rebalance dates
@@ -465,7 +649,7 @@ def run_backtest(
     print(f"      Benchmark data: {len(benchmark)} days")
     
     # Run rebalances
-    print("[4/5] Running rebalances...")
+    print(f"[4/5] Running {strategy_name} rebalances...")
     holdings_history = []
     rebalance_info_list = []
     prev_holdings = {}
@@ -474,7 +658,7 @@ def run_backtest(
         print(f"      [{i+1}/{len(rebalance_dates)}] {rebal_date}...", end=" ")
         
         try:
-            holdings, momentum, info = run_single_rebalance(
+            holdings, factor_scores, info = rebalance_fn(
                 as_of_date=rebal_date,
                 prices=prices,
                 universe_symbols=available_symbols,
@@ -518,12 +702,12 @@ def run_backtest(
         turnover_list=turnover_list,
     )
     
-    # Save artifacts
+    # Save artifacts (with strategy suffix for value)
     config.artifacts_path.mkdir(parents=True, exist_ok=True)
     
     # Save per-rebalance info
     rebalance_df = pd.DataFrame(rebalance_info_list)
-    rebalance_path = config.artifacts_path / "rebalances.csv"
+    rebalance_path = config.artifacts_path / f"rebalances{artifact_suffix}.csv"
     rebalance_df.to_csv(rebalance_path, index=False)
     print(f"Saved rebalance history to {rebalance_path}")
     
@@ -541,18 +725,19 @@ def run_backtest(
     nav_df["benchmark_nav"] = benchmark_nav
     
     nav_df.index.name = "date"
-    performance_path = config.artifacts_path / "performance.csv"
+    performance_path = config.artifacts_path / f"performance{artifact_suffix}.csv"
     nav_df.to_csv(performance_path)
     print(f"Saved performance time series to {performance_path}")
     
     # Save metrics
-    metrics_path = config.artifacts_path / "metrics.csv"
+    metrics["strategy"] = strategy
+    metrics_path = config.artifacts_path / f"metrics{artifact_suffix}.csv"
     pd.DataFrame([metrics]).to_csv(metrics_path, index=False)
     print(f"Saved backtest metrics to {metrics_path}")
     
     # Save holding periods
     holding_periods = compute_holding_periods(holdings_history, rebalance_dates)
-    holding_path = config.artifacts_path / "holding_periods.csv"
+    holding_path = config.artifacts_path / f"holding_periods{artifact_suffix}.csv"
     holding_periods.to_csv(holding_path, index=False)
     print(f"Saved holding periods to {holding_path}")
     
@@ -628,6 +813,25 @@ def main():
         action="store_true",
         help="Force re-download of price data"
     )
+    parser.add_argument(
+        "--strategy",
+        type=str,
+        choices=["momentum", "value", "blend"],
+        default="momentum",
+        help="Strategy to backtest: momentum, value, or blend (default: momentum)"
+    )
+    parser.add_argument(
+        "--momentum-weight",
+        type=float,
+        default=0.75,
+        help="Momentum weight for blend strategy (default: 0.75)"
+    )
+    parser.add_argument(
+        "--value-weight",
+        type=float,
+        default=0.25,
+        help="Value weight for blend strategy (default: 0.25)"
+    )
     
     args = parser.parse_args()
     run_backtest(
@@ -635,6 +839,9 @@ def main():
         end_date=args.end_date,
         max_positions=args.max_positions,
         force_refresh=args.force_refresh,
+        strategy=args.strategy,
+        momentum_weight=args.momentum_weight,
+        value_weight=args.value_weight,
     )
 
 

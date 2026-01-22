@@ -102,6 +102,106 @@ def load_holding_periods() -> pd.DataFrame:
 
 
 # ==============================================================================
+# VALUE STRATEGY DATA LOADERS
+# ==============================================================================
+
+@st.cache_data(ttl=60)
+def load_metrics_value() -> dict:
+    """Load Value strategy metrics from API."""
+    try:
+        r = requests.get(f"{API_BASE}/metrics_value", timeout=10)
+        return r.json().get("metrics", {}) if r.status_code == 200 else {}
+    except Exception:
+        return {}
+
+
+@st.cache_data(ttl=60)
+def load_performance_value() -> pd.DataFrame:
+    """Load Value strategy performance time series."""
+    try:
+        r = requests.get(f"{API_BASE}/performance_value", timeout=10)
+        if r.status_code == 200:
+            df = pd.DataFrame(r.json().get("performance", []))
+            if "date" in df.columns:
+                df["date"] = pd.to_datetime(df["date"])
+                df = df.set_index("date").sort_index()
+            return df
+        return pd.DataFrame()
+    except Exception:
+        return pd.DataFrame()
+
+
+@st.cache_data(ttl=60)
+def load_rebalances_value() -> pd.DataFrame:
+    """Load Value strategy rebalance history."""
+    try:
+        r = requests.get(f"{API_BASE}/rebalances_value", timeout=10)
+        return pd.DataFrame(r.json().get("rebalances", [])) if r.status_code == 200 else pd.DataFrame()
+    except Exception:
+        return pd.DataFrame()
+
+
+@st.cache_data(ttl=60)
+def load_holding_periods_value() -> pd.DataFrame:
+    """Load Value strategy holding periods."""
+    try:
+        r = requests.get(f"{API_BASE}/holding_periods_value", timeout=10)
+        return pd.DataFrame(r.json().get("holding_periods", [])) if r.status_code == 200 else pd.DataFrame()
+    except Exception:
+        return pd.DataFrame()
+
+
+# ==============================================================================
+# BLEND STRATEGY DATA LOADERS
+# ==============================================================================
+
+@st.cache_data(ttl=60)
+def load_metrics_blend() -> dict:
+    """Load Blend (75% Mom / 25% Val) strategy metrics from API."""
+    try:
+        r = requests.get(f"{API_BASE}/metrics_blend", timeout=10)
+        return r.json().get("metrics", {}) if r.status_code == 200 else {}
+    except Exception:
+        return {}
+
+
+@st.cache_data(ttl=60)
+def load_performance_blend() -> pd.DataFrame:
+    """Load Blend strategy performance time series."""
+    try:
+        r = requests.get(f"{API_BASE}/performance_blend", timeout=10)
+        if r.status_code == 200:
+            df = pd.DataFrame(r.json().get("performance", []))
+            if "date" in df.columns:
+                df["date"] = pd.to_datetime(df["date"])
+                df = df.set_index("date").sort_index()
+            return df
+        return pd.DataFrame()
+    except Exception:
+        return pd.DataFrame()
+
+
+@st.cache_data(ttl=60)
+def load_rebalances_blend() -> pd.DataFrame:
+    """Load Blend strategy rebalance history."""
+    try:
+        r = requests.get(f"{API_BASE}/rebalances_blend", timeout=10)
+        return pd.DataFrame(r.json().get("rebalances", [])) if r.status_code == 200 else pd.DataFrame()
+    except Exception:
+        return pd.DataFrame()
+
+
+@st.cache_data(ttl=60)
+def load_holding_periods_blend() -> pd.DataFrame:
+    """Load Blend strategy holding periods."""
+    try:
+        r = requests.get(f"{API_BASE}/holding_periods_blend", timeout=10)
+        return pd.DataFrame(r.json().get("holding_periods", [])) if r.status_code == 200 else pd.DataFrame()
+    except Exception:
+        return pd.DataFrame()
+
+
+# ==============================================================================
 # SIDEBAR NAVIGATION
 # ==============================================================================
 
@@ -110,7 +210,7 @@ st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigate",
-    ["Overview", "Performance", "Robustness & Risk", "Portfolio", "Rebalance History"],
+    ["Overview", "Performance", "Robustness & Risk", "Portfolio", "Rebalance History", "🧠 Strategy Comparison"],
     index=0,
 )
 
@@ -631,6 +731,238 @@ elif page == "Rebalance History":
         churn_df = churn_df.set_index("date")
         churn_df.columns = ["Added", "Removed"]
         st.bar_chart(churn_df, use_container_width=True)
+
+
+# ==============================================================================
+# PAGE 6: STRATEGY COMPARISON
+# Purpose: Compare Momentum, Value, and Blend (75/25) strategies
+# ==============================================================================
+
+elif page == "🧠 Strategy Comparison":
+    st.title("Strategy Comparison")
+    st.markdown("*How do Momentum, Value, and the Blend differ in behavior and risk?*")
+    
+    # Load all strategy data
+    metrics_mom = metrics  # Already loaded
+    metrics_val = load_metrics_value()
+    metrics_blend = load_metrics_blend()
+    
+    perf_mom = performance_df  # Already loaded
+    perf_val = load_performance_value()
+    perf_blend = load_performance_blend()
+    
+    rebal_mom = rebalances_df  # Already loaded
+    rebal_val = load_rebalances_value()
+    rebal_blend = load_rebalances_blend()
+    
+    hold_mom = holding_periods_df  # Already loaded
+    hold_val = load_holding_periods_value()
+    hold_blend = load_holding_periods_blend()
+    
+    # Check data availability
+    has_momentum = bool(metrics_mom)
+    has_value = bool(metrics_val)
+    has_blend = bool(metrics_blend)
+    
+    if not has_momentum and not has_value and not has_blend:
+        st.error("No strategy data available. Run backtests first.")
+        st.stop()
+    
+    st.markdown("---")
+    
+    # --- Section 1: High-Level Metrics Table ---
+    st.markdown("### 1. Key Metrics Comparison")
+    
+    def extract_metric(m, key, default=0):
+        """Safely extract metric value."""
+        return m.get(key, default) if m else default
+    
+    comparison_data = []
+    
+    if has_momentum:
+        comparison_data.append({
+            "Strategy": "Momentum",
+            "Total Return (Gross)": f"{extract_metric(metrics_mom, 'gross_total_return', 0)*100:.1f}%",
+            "Total Return (Net)": f"{extract_metric(metrics_mom, 'net_total_return', 0)*100:.1f}%",
+            "Sharpe": f"{extract_metric(metrics_mom, 'gross_sharpe', 0):.2f}",
+            "Max Drawdown": f"{extract_metric(metrics_mom, 'gross_max_drawdown', 0)*100:.1f}%",
+            "Avg Turnover": f"{extract_metric(metrics_mom, 'avg_turnover', 0)*100:.1f}%",
+            "Mean Holding": f"{extract_metric(metrics_mom, 'mean_holding_periods', 0):.1f}",
+            "Robust": "✅" if extract_metric(metrics_mom, 'is_robust', True) else "⚠️",
+        })
+    
+    if has_value:
+        comparison_data.append({
+            "Strategy": "Value",
+            "Total Return (Gross)": f"{extract_metric(metrics_val, 'gross_total_return', 0)*100:.1f}%",
+            "Total Return (Net)": f"{extract_metric(metrics_val, 'net_total_return', 0)*100:.1f}%",
+            "Sharpe": f"{extract_metric(metrics_val, 'gross_sharpe', 0):.2f}",
+            "Max Drawdown": f"{extract_metric(metrics_val, 'gross_max_drawdown', 0)*100:.1f}%",
+            "Avg Turnover": f"{extract_metric(metrics_val, 'avg_turnover', 0)*100:.1f}%",
+            "Mean Holding": f"{extract_metric(metrics_val, 'mean_holding_periods', 0):.1f}",
+            "Robust": "✅" if extract_metric(metrics_val, 'is_robust', True) else "⚠️",
+        })
+    
+    if has_blend:
+        comparison_data.append({
+            "Strategy": "Blend (75% Mom / 25% Val)",
+            "Total Return (Gross)": f"{extract_metric(metrics_blend, 'gross_total_return', 0)*100:.1f}%",
+            "Total Return (Net)": f"{extract_metric(metrics_blend, 'net_total_return', 0)*100:.1f}%",
+            "Sharpe": f"{extract_metric(metrics_blend, 'gross_sharpe', 0):.2f}",
+            "Max Drawdown": f"{extract_metric(metrics_blend, 'gross_max_drawdown', 0)*100:.1f}%",
+            "Avg Turnover": f"{extract_metric(metrics_blend, 'avg_turnover', 0)*100:.1f}%",
+            "Mean Holding": f"{extract_metric(metrics_blend, 'mean_holding_periods', 0):.1f}",
+            "Robust": "✅" if extract_metric(metrics_blend, 'is_robust', True) else "⚠️",
+        })
+    
+    comparison_df = pd.DataFrame(comparison_data)
+    st.dataframe(comparison_df, use_container_width=True, hide_index=True)
+    
+    st.markdown("---")
+    
+    # --- Section 2: Performance Comparison (NAV Curves) ---
+    st.markdown("### 2. Performance Comparison")
+    st.markdown("*NAV curves: Momentum vs Value vs Blend vs Benchmark*")
+    
+    nav_chart_data = pd.DataFrame()
+    
+    if not perf_mom.empty and "portfolio_nav_gross" in perf_mom.columns:
+        nav_chart_data["Momentum"] = perf_mom["portfolio_nav_gross"]
+    
+    if not perf_val.empty and "portfolio_nav_gross" in perf_val.columns:
+        nav_chart_data["Value"] = perf_val["portfolio_nav_gross"]
+    
+    if not perf_blend.empty and "portfolio_nav_gross" in perf_blend.columns:
+        nav_chart_data["Blend (75/25)"] = perf_blend["portfolio_nav_gross"]
+    
+    # Add benchmark from any available strategy
+    for perf, name in [(perf_mom, "mom"), (perf_val, "val"), (perf_blend, "blend")]:
+        if not perf.empty and "benchmark_nav" in perf.columns:
+            nav_chart_data["Benchmark"] = perf["benchmark_nav"]
+            break
+    
+    if not nav_chart_data.empty:
+        st.line_chart(nav_chart_data, use_container_width=True)
+    else:
+        st.warning("No NAV data available for comparison.")
+    
+    st.markdown("---")
+    
+    # --- Section 3: Drawdown Comparison ---
+    st.markdown("### 3. Drawdown Comparison")
+    st.markdown("*Which strategy absorbs market stress better?*")
+    
+    def compute_drawdown(nav_series):
+        """Compute drawdown from NAV series."""
+        if nav_series.empty:
+            return pd.Series()
+        rolling_max = nav_series.expanding().max()
+        drawdown = (nav_series - rolling_max) / rolling_max * 100
+        return drawdown
+    
+    dd_chart_data = pd.DataFrame()
+    
+    if not perf_mom.empty and "portfolio_nav_gross" in perf_mom.columns:
+        dd_chart_data["Momentum"] = compute_drawdown(perf_mom["portfolio_nav_gross"])
+    
+    if not perf_val.empty and "portfolio_nav_gross" in perf_val.columns:
+        dd_chart_data["Value"] = compute_drawdown(perf_val["portfolio_nav_gross"])
+    
+    if not perf_blend.empty and "portfolio_nav_gross" in perf_blend.columns:
+        dd_chart_data["Blend (75/25)"] = compute_drawdown(perf_blend["portfolio_nav_gross"])
+    
+    if not dd_chart_data.empty:
+        st.line_chart(dd_chart_data, use_container_width=True)
+        
+        # Show max drawdown numbers
+        col1, col2, col3 = st.columns(3)
+        if "Momentum" in dd_chart_data.columns:
+            col1.metric("Momentum Max DD", f"{dd_chart_data['Momentum'].min():.1f}%")
+        if "Value" in dd_chart_data.columns:
+            col2.metric("Value Max DD", f"{dd_chart_data['Value'].min():.1f}%")
+        if "Blend (75/25)" in dd_chart_data.columns:
+            col3.metric("Blend Max DD", f"{dd_chart_data['Blend (75/25)'].min():.1f}%")
+    else:
+        st.warning("No drawdown data available for comparison.")
+    
+    st.markdown("---")
+    
+    # --- Section 4: Turnover & Persistence ---
+    st.markdown("### 4. Turnover & Persistence")
+    
+    # Turnover comparison
+    st.markdown("#### Turnover Over Time")
+    
+    turnover_chart_data = pd.DataFrame()
+    
+    if not rebal_mom.empty and "turnover" in rebal_mom.columns and "date" in rebal_mom.columns:
+        mom_turn = rebal_mom[["date", "turnover"]].copy()
+        mom_turn["date"] = pd.to_datetime(mom_turn["date"])
+        mom_turn = mom_turn.set_index("date")
+        turnover_chart_data["Momentum"] = mom_turn["turnover"] * 100
+    
+    if not rebal_val.empty and "turnover" in rebal_val.columns and "date" in rebal_val.columns:
+        val_turn = rebal_val[["date", "turnover"]].copy()
+        val_turn["date"] = pd.to_datetime(val_turn["date"])
+        val_turn = val_turn.set_index("date")
+        turnover_chart_data["Value"] = val_turn["turnover"] * 100
+    
+    if not rebal_blend.empty and "turnover" in rebal_blend.columns and "date" in rebal_blend.columns:
+        blend_turn = rebal_blend[["date", "turnover"]].copy()
+        blend_turn["date"] = pd.to_datetime(blend_turn["date"])
+        blend_turn = blend_turn.set_index("date")
+        turnover_chart_data["Blend (75/25)"] = blend_turn["turnover"] * 100
+    
+    if not turnover_chart_data.empty:
+        st.line_chart(turnover_chart_data, use_container_width=True)
+    else:
+        st.warning("No turnover data available for comparison.")
+    
+    # Holding period distributions
+    st.markdown("#### Holding Period Distribution")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("**Momentum**")
+        if not hold_mom.empty and "holding_periods" in hold_mom.columns:
+            st.bar_chart(hold_mom["holding_periods"].value_counts().sort_index())
+        else:
+            st.caption("No data")
+    
+    with col2:
+        st.markdown("**Value**")
+        if not hold_val.empty and "holding_periods" in hold_val.columns:
+            st.bar_chart(hold_val["holding_periods"].value_counts().sort_index())
+        else:
+            st.caption("No data")
+    
+    with col3:
+        st.markdown("**Blend (75/25)**")
+        if not hold_blend.empty and "holding_periods" in hold_blend.columns:
+            st.bar_chart(hold_blend["holding_periods"].value_counts().sort_index())
+        else:
+            st.caption("No data")
+    
+    st.markdown("---")
+    
+    # --- Section 5: Interpretation Notes ---
+    st.markdown("### 5. Interpretation Notes")
+    
+    st.info("""
+**Key Observations:**
+
+- **Momentum** dominates in trending regimes - captures price persistence
+- **Value** may lag in this window but provides diversification against momentum reversals
+- **Blend (75/25)** trades some return for stability - lower volatility than pure momentum
+- **No strategy wins always** - performance depends on market regime
+
+**Design Notes:**
+- All strategies use same universe (Nifty 500) and rebalance frequency (monthly)
+- Transaction costs assumed at 50bps round-trip
+- Value factor = 50% Earnings Yield + 50% Book-to-Price (z-scored)
+- Blend combines z-scored momentum and value with 75%/25% weights
+    """)
 
 
 # ==============================================================================
