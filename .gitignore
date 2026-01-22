@@ -40,3 +40,5 @@ logs/
 dist/
 build/
 *.egg-info/
+*.key
+*.key.pub
